@@ -249,7 +249,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Support
 
 For support, email support@rewear.com or join our community Discord server.
-
----
+ 
 
 **Happy Swapping! 🌱👕**
