@@ -1,0 +1,166 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String    @id @default(cuid())
+  name           String?
+  email          String?   @unique
+  emailVerified  DateTime?
+  image          String?
+  hashedPassword String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  accounts Account[]
+  sessions Session[]
+  trips    Trip[]
+  savedDestinations SavedDestination[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Trip {
+  id            String    @id @default(cuid())
+  userId        String
+  name          String
+  description   String?
+  coverImageUrl String?
+  startDate     DateTime
+  endDate       DateTime
+  isPublic      Boolean   @default(false)
+  shareSlug     String?   @unique
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stops     Stop[]
+  activities Activity[]
+  budgetItems BudgetItem[]
+}
+
+model Stop {
+  id        String   @id @default(cuid())
+  tripId    String
+  city      String
+  country   String?
+  startDate DateTime
+  endDate   DateTime
+  position  Int
+  notes     String?
+
+  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  activities Activity[]
+
+  @@index([tripId])
+}
+
+enum ActivityCategory {
+  TRANSPORT
+  LODGING
+  ACTIVITY
+  MEAL
+  OTHER
+}
+
+model Activity {
+  id           String           @id @default(cuid())
+  tripId       String
+  stopId       String?
+  date         DateTime
+  title        String
+  description  String?
+  category     ActivityCategory @default(ACTIVITY)
+  costCents    Int              @default(0)
+  currency     String           @default("USD")
+  startTime    String?
+  endTime      String?
+  orderIndex   Int              @default(0)
+  locationName String?
+  externalUrl  String?
+
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  stop Stop? @relation(fields: [stopId], references: [id])
+
+  @@index([tripId])
+  @@index([stopId])
+}
+
+enum BudgetCategory {
+  TRANSPORT
+  STAY
+  ACTIVITIES
+  MEALS
+  OTHER
+}
+
+model BudgetItem {
+  id         String          @id @default(cuid())
+  tripId     String
+  category   BudgetCategory
+  amountCents Int
+  currency   String          @default("USD")
+  notes      String?
+
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([tripId])
+}
+
+model SavedDestination {
+  id        String   @id @default(cuid())
+  userId    String
+  city      String
+  country   String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, city, country])
+}
